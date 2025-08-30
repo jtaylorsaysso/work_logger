@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2563eb">
+    <title>Personal Logger</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body>
+    <div id="app" x-data="logger" class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Quick Logger</h1>
+            <div class="status" :class="{'online': isOnline, 'offline': !isOnline}">
+                <span x-text="isOnline ? 'Online' : 'Offline'"></span>
+            </div>
+        </header>
+
+        <!-- Quick Entry Buttons -->
+        <main class="main-content">
+            <div class="quick-actions">
+                <button 
+                    class="action-btn issue-btn" 
+                    @click="quickEntry('issue')"
+                    :disabled="isLoading">
+                    <div class="btn-icon">🔴</div>
+                    <div class="btn-text">Issue</div>
+                </button>
+
+                <button 
+                    class="action-btn task-btn" 
+                    @click="quickEntry('task')"
+                    :disabled="isLoading">
+                    <div class="btn-icon">🟡</div>
+                    <div class="btn-text">Task</div>
+                </button>
+
+                <button 
+                    class="action-btn note-btn" 
+                    @click="quickEntry('note')"
+                    :disabled="isLoading">
+                    <div class="btn-icon">🔵</div>
+                    <div class="btn-text">Note</div>
+                </button>
+            </div>
+
+            <!-- Quick Entry Modal -->
+            <div x-show="showModal" class="modal-overlay" @click.self="closeModal()">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 x-text="'Add ' + currentType"></h2>
+                        <button @click="closeModal()" class="close-btn">×</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <!-- Quick Templates -->
+                        <div class="templates" x-show="templates[currentType]?.length > 0">
+                            <h3>Quick Templates</h3>
+                            <div class="template-grid">
+                                <template x-for="template in templates[currentType]" :key="template">
+                                    <button 
+                                        class="template-btn" 
+                                        @click="useTemplate(template)"
+                                        x-text="template">
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Text Input -->
+                        <div class="input-section">
+                            <textarea 
+                                x-model="entryText" 
+                                placeholder="Enter details..."
+                                class="entry-input"
+                                rows="3"
+                                @keydown.enter.meta="saveEntry()"
+                                x-ref="textInput">
+                            </textarea>
+                        </div>
+
+                        <!-- Voice Input Button -->
+                        <button 
+                            class="voice-btn" 
+                            @click="startVoiceInput()"
+                            :disabled="!voiceSupported || isRecording">
+                            <span x-text="isRecording ? '🎤 Recording...' : '🎤 Voice'"></span>
+                        </button>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button @click="closeModal()" class="cancel-btn">Cancel</button>
+                        <button @click="saveEntry()" class="save-btn" :disabled="!entryText.trim()">
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Entries -->
+            <div class="recent-section">
+                <h2>Recent Entries</h2>
+                <div class="entries-list">
+                    <template x-for="entry in recentEntries" :key="entry.id">
+                        <div class="entry-item" :class="'entry-' + entry.type">
+                            <div class="entry-header">
+                                <span class="entry-type" x-text="entry.type"></span>
+                                <span class="entry-time" x-text="formatTime(entry.timestamp)"></span>
+                            </div>
+                            <div class="entry-content" x-text="entry.content"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </main>
+
+        <!-- Success Toast -->
+        <div x-show="showToast" class="toast" x-transition>
+            <span x-text="toastMessage"></span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
